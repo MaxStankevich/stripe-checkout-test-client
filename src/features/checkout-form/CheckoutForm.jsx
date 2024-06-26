@@ -14,7 +14,7 @@ import { CardIcon, LockOpenIcon, EnvelopeIcon } from "../../components/icons";
 const CheckoutForm = () => {
   const stripe = useStripe();
   const elements = useElements();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState("test@test.com");
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [paymentRequest, setPaymentRequest] = useState(null);
@@ -47,7 +47,7 @@ const CheckoutForm = () => {
         currency: "usd",
         total: {
           label: "Total",
-          amount: 66600,
+          amount: 1,
         },
         requestPayerName: true,
         requestPayerEmail: true,
@@ -66,7 +66,6 @@ const CheckoutForm = () => {
             .post(
               `${import.meta.env.VITE_API_URL}/payment/create-payment-intent`,
               {
-                amount: 66600,
                 email: ev.payerEmail,
               }
             )
@@ -88,6 +87,7 @@ const CheckoutForm = () => {
           }
         } catch (error) {
           ev.complete("fail");
+          console.error("Error occurred during payment method:", error);
           setError(error.message);
         }
       });
@@ -103,27 +103,26 @@ const CheckoutForm = () => {
       return;
     }
 
-    const cardElement = elements.getElement(CardElement);
+    const cardNumberElement = elements.getElement(CardNumberElement);
 
     try {
-      const { error, paymentMethod } = await stripe.createPaymentMethod({
-        type: "card",
-        card: cardElement,
-        billing_details: {
-          email: email,
-        },
-      });
+      const { error: methodError, paymentMethod } =
+        await stripe.createPaymentMethod({
+          type: "card",
+          card: cardNumberElement,
+          billing_details: {
+            email: email,
+          },
+        });
 
-      if (error) {
-        setError(error.message);
+      if (methodError) {
+        setError(methodError.message);
         return;
       }
 
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/payment/create-payment-intent`,
         {
-          paymentMethodId: paymentMethod.id,
-          amount: 66600,
           email: email,
         }
       );
@@ -143,6 +142,7 @@ const CheckoutForm = () => {
         setSuccess(true);
       }
     } catch (error) {
+      console.error("Error occurred:", error);
       setError(error.message);
     }
   };
@@ -167,22 +167,23 @@ const CheckoutForm = () => {
   return (
     <div className="flex items-center justify-center">
       <div className="w-full p-4">
-        <p className="text-center text-white text-lg">Total $666.00</p>
+        <p className="text-center text-white text-lg mb-4">Total $666.00</p>
 
         {canMakePayment && paymentRequest && (
-          <PaymentRequestButtonElement
-            options={{ paymentRequest }}
-            className="w-full py-2 mb-4"
-          />
+          <>
+            <PaymentRequestButtonElement
+              options={{ paymentRequest }}
+              className="w-full py-2 mb-4"
+            />
+            <div className="relative flex items-center mb-2">
+              <div className="flex-grow border-t border-input-placeholder"></div>
+              <span className="flex-shrink text-sm mx-2 text-input-placeholder">
+                Or pay by card
+              </span>
+              <div className="flex-grow border-t border-input-placeholder"></div>
+            </div>
+          </>
         )}
-
-        <div className="relative flex items-center mb-2">
-          <div className="flex-grow border-t border-input-placeholder"></div>
-          <span className="flex-shrink text-sm mx-2 text-input-placeholder">
-            Or pay by card
-          </span>
-          <div className="flex-grow border-t border-input-placeholder"></div>
-        </div>
 
         <div className="flex justify-between space-x-2 mb-4">
           <img src={cardsIcons} alt="Cards" />
