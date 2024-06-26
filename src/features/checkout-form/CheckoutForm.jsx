@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   CardNumberElement,
   CardExpiryElement,
@@ -11,6 +11,7 @@ import cardsIcons from "../../assets/cards.svg";
 import { CardIcon, LockOpenIcon, EnvelopeIcon } from "../../components/icons";
 import { elementStyle } from "../../constants";
 import PaymentButton from "./PaymentButton";
+import Spinner from "../../components/Spinner";
 
 const CheckoutForm = () => {
   const stripe = useStripe();
@@ -18,11 +19,19 @@ const CheckoutForm = () => {
   const [email, setEmail] = useState("");
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [focusStatus, setFocusStatus] = useState({
     cardNumber: false,
     cardExpiry: false,
     cardCvc: false,
+  });
+
+  const [fieldComplete, setFieldComplete] = useState({
+    cardNumber: false,
+    cardExpiry: false,
+    cardCvc: false,
+    email: false,
   });
 
   const onFocus = (e) => {
@@ -39,10 +48,27 @@ const CheckoutForm = () => {
     }));
   };
 
+  const handleFieldChange = (elementType, isComplete) => {
+    setFieldComplete((prev) => ({
+      ...prev,
+      [elementType]: isComplete,
+    }));
+  };
+
+  const isFormValid = () => {
+    return (
+      fieldComplete.cardNumber &&
+      fieldComplete.cardExpiry &&
+      fieldComplete.cardCvc &&
+      fieldComplete.email
+    );
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError(null);
     setSuccess(false);
+    setIsSubmitting(true);
 
     if (!stripe || !elements) {
       return;
@@ -62,6 +88,7 @@ const CheckoutForm = () => {
 
       if (methodError) {
         setError(methodError.message);
+        setIsSubmitting(false);
         return;
       }
 
@@ -80,6 +107,7 @@ const CheckoutForm = () => {
 
       if (confirmError) {
         setError(confirmError.message);
+        setIsSubmitting(false);
         return;
       }
 
@@ -89,8 +117,17 @@ const CheckoutForm = () => {
     } catch (error) {
       console.error("Error occurred:", error);
       setError(error.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    setFieldComplete((prev) => ({
+      ...prev,
+      email: /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email),
+    }));
+  }, [email]);
 
   return (
     <div className="flex items-center justify-center">
@@ -119,6 +156,9 @@ const CheckoutForm = () => {
                 }}
                 onFocus={onFocus}
                 onBlur={onBlur}
+                onChange={(event) =>
+                  handleFieldChange("cardNumber", event.complete)
+                }
               />
             </div>
           </div>
@@ -142,6 +182,9 @@ const CheckoutForm = () => {
                 }}
                 onFocus={onFocus}
                 onBlur={onBlur}
+                onChange={(event) =>
+                  handleFieldChange("cardExpiry", event.complete)
+                }
               />
             </div>
             <div
@@ -163,6 +206,9 @@ const CheckoutForm = () => {
                 }}
                 onFocus={onFocus}
                 onBlur={onBlur}
+                onChange={(event) =>
+                  handleFieldChange("cardCvc", event.complete)
+                }
               />
             </div>
           </div>
@@ -180,9 +226,18 @@ const CheckoutForm = () => {
 
           <button
             type="submit"
-            className="w-full py-4 text-white font-semibold bg-green-600 rounded-custom focus:outline-none focus:ring-2 focus:ring-green-500 hover:bg-green-700 flex items-center justify-center"
+            className={`w-full py-4 font-semibold rounded-custom focus:outline-none focus:ring-2  flex items-center justify-center transition-all duration-100 ${
+              isFormValid() && !isSubmitting
+                ? "bg-green-600 focus:ring-green-500 hover:bg-green-700 text-white"
+                : "bg-green-900 cursor-not-allowed text-gray-400"
+            }`}
+            disabled={!isFormValid() || isSubmitting}
           >
-            <LockOpenIcon className="w-3 h-3 mr-1" />
+            {isSubmitting ? (
+              <Spinner />
+            ) : (
+              <LockOpenIcon className="w-3 h-3 mr-1" />
+            )}
             Confirm Purchase
           </button>
         </form>
