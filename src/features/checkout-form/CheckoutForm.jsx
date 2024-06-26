@@ -1,33 +1,44 @@
 import React, { useState, useEffect } from "react";
-import { loadStripe } from "@stripe/stripe-js";
 import {
-  Elements,
-  CardElement,
+  CardNumberElement,
+  CardExpiryElement,
+  CardCvcElement,
   useStripe,
   useElements,
   PaymentRequestButtonElement,
 } from "@stripe/react-stripe-js";
 import axios from "axios";
-import {
-  FaCcVisa,
-  FaCcMastercard,
-  FaCcDiscover,
-  FaCcAmex,
-  FaCcJcb,
-  FaCcDinersClub,
-  FaLockOpen,
-} from "react-icons/fa";
-
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+import cardsIcons from "../../assets/cards.svg";
+import { CardIcon, LockOpenIcon, EnvelopeIcon } from "../../components/icons";
 
 const CheckoutForm = () => {
   const stripe = useStripe();
   const elements = useElements();
-  const [email, setEmail] = useState("test@example.com");
+  const [email, setEmail] = useState("");
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [paymentRequest, setPaymentRequest] = useState(null);
   const [canMakePayment, setCanMakePayment] = useState(false);
+
+  const [focusStatus, setFocusStatus] = useState({
+    cardNumber: false,
+    cardExpiry: false,
+    cardCvc: false,
+  });
+
+  const onFocus = (e) => {
+    setFocusStatus((prev) => ({
+      ...prev,
+      [e.elementType]: true,
+    }));
+  };
+
+  const onBlur = (e) => {
+    setFocusStatus((prev) => ({
+      ...prev,
+      [e.elementType]: false,
+    }));
+  };
 
   useEffect(() => {
     if (stripe) {
@@ -85,6 +96,8 @@ const CheckoutForm = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setError(null);
+    setSuccess(false);
 
     if (!stripe || !elements) {
       return;
@@ -134,12 +147,27 @@ const CheckoutForm = () => {
     }
   };
 
+  const elementStyle = {
+    base: {
+      color: "#ffffff",
+      fontFamily: "Arial, sans-serif",
+      fontSmoothing: "antialiased",
+      fontSize: "18px",
+      backgroundColor: "#322f3b",
+      "::placeholder": {
+        color: "#98979e",
+      },
+    },
+    invalid: {
+      color: "#fa755a",
+      iconColor: "#fa755a",
+    },
+  };
+
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="w-full max-w-md p-8 space-y-4 rounded-lg">
-        <h2 className="text-2xl font-bold text-center text-white">
-          Total $666.00
-        </h2>
+    <div className="flex items-center justify-center">
+      <div className="w-full p-4">
+        <p className="text-center text-white text-lg">Total $666.00</p>
 
         {canMakePayment && paymentRequest && (
           <PaymentRequestButtonElement
@@ -148,57 +176,99 @@ const CheckoutForm = () => {
           />
         )}
 
-        <div className="relative flex py-4 items-center">
-          <div className="flex-grow border-t border-gray-400"></div>
-          <span className="flex-shrink mx-4 text-gray-400">Or pay by card</span>
-          <div className="flex-grow border-t border-gray-400"></div>
+        <div className="relative flex items-center mb-2">
+          <div className="flex-grow border-t border-input-placeholder"></div>
+          <span className="flex-shrink text-sm mx-2 text-input-placeholder">
+            Or pay by card
+          </span>
+          <div className="flex-grow border-t border-input-placeholder"></div>
         </div>
 
-        <div className="flex justify-between space-x-2">
-          <FaCcVisa className="text-white w-10 h-10" />
-          <FaCcMastercard className="text-white w-10 h-10" />
-          <FaCcDiscover className="text-white w-10 h-10" />
-          <FaCcAmex className="text-white w-10 h-10" />
-          <FaCcJcb className="text-white w-10 h-10" />
-          <FaCcDinersClub className="text-white w-10 h-10" />
+        <div className="flex justify-between space-x-2 mb-4">
+          <img src={cardsIcons} alt="Cards" />
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="w-full px-4 py-2 mt-4 text-white bg-gray-700 rounded-lg">
-            <CardElement
-              options={{
-                style: {
-                  base: {
-                    color: "#ffffff",
-                    fontFamily: "Arial, sans-serif",
-                    fontSmoothing: "antialiased",
-                    fontSize: "16px",
-                    "::placeholder": {
-                      color: "#888888",
+        <form onSubmit={handleSubmit}>
+          <div
+            className={`flex items-center w-full px-4 py-4 max-h-input mb-3 text-white bg-input-custom rounded-custom border-2 ${
+              focusStatus["cardNumber"]
+                ? "border-green-600"
+                : "border-input-custom"
+            } transition-colors duration-100`}
+          >
+            <CardIcon />
+            <div className="ml-2 flex-grow">
+              <CardNumberElement
+                options={{
+                  style: elementStyle,
+                }}
+                onFocus={onFocus}
+                onBlur={onBlur}
+              />
+            </div>
+          </div>
+          <div className="flex justify-between mt-0 mb-3">
+            <div
+              className={`w-full px-2 py-4 max-h-input mr-4 text-white bg-input-custom rounded-custom border-2 ${
+                focusStatus["cardExpiry"]
+                  ? "border-green-600"
+                  : "border-input-custom"
+              } transition-colors duration-100`}
+            >
+              <CardExpiryElement
+                options={{
+                  style: {
+                    ...elementStyle,
+                    base: {
+                      ...elementStyle.base,
+                      textAlign: "center",
                     },
                   },
-                  invalid: {
-                    color: "#fa755a",
-                    iconColor: "#fa755a",
+                }}
+                onFocus={onFocus}
+                onBlur={onBlur}
+              />
+            </div>
+            <div
+              className={`w-full px-2 py-4 max-h-input max-w-80 text-white bg-input-custom rounded-custom border-2 ${
+                focusStatus["cardCvc"]
+                  ? "border-green-600"
+                  : "border-input-custom"
+              } transition-colors duration-100`}
+            >
+              <CardCvcElement
+                options={{
+                  style: {
+                    ...elementStyle,
+                    base: {
+                      ...elementStyle.base,
+                      textAlign: "center",
+                    },
                   },
-                },
-              }}
+                }}
+                onFocus={onFocus}
+                onBlur={onBlur}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center w-full px-4 py-4 mb-3 text-white bg-input-custom rounded-custom border-2 border-input-custom focus-within:ring-2 focus-within:ring-green-600 transition-all duration-100">
+            <EnvelopeIcon />
+            <input
+              type="email"
+              placeholder="mail@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="flex-grow ml-2 text-white bg-input-custom placeholder-input-placeholder focus:outline-none"
             />
           </div>
 
-          <input
-            type="email"
-            placeholder="mail@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-2 mt-4 text-white bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-
           <button
             type="submit"
-            className="w-full py-2 mt-6 text-white bg-green-600 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500 flex items-center justify-center"
+            className="w-full py-4 text-white font-semibold bg-green-600 rounded-custom focus:outline-none focus:ring-2 focus:ring-green-500 hover:bg-green-700 flex items-center justify-center"
           >
-            <FaLockOpen className="w-3 h-3 mr-2" /> Confirm Purchase
+            <LockOpenIcon className="w-3 h-3 mr-1" />
+            Confirm Purchase
           </button>
         </form>
 
@@ -211,10 +281,4 @@ const CheckoutForm = () => {
   );
 };
 
-const App = () => (
-  <Elements stripe={stripePromise}>
-    <CheckoutForm />
-  </Elements>
-);
-
-export default App;
+export default CheckoutForm;
