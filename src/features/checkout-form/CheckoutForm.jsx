@@ -99,7 +99,7 @@ const CheckoutForm = () => {
 
         <PaymentButton setError={setError} setSuccess={setSuccess} />
 
-        <div className="flex justify-between space-x-2 mb-4">
+        <div className="flex justify-between space-x-2 mb-4 px-2">
           <img src={cardsIcons} alt="Cards" />
         </div>
 
