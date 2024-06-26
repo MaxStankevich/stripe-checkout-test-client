@@ -1,24 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   CardNumberElement,
   CardExpiryElement,
   CardCvcElement,
   useStripe,
   useElements,
-  PaymentRequestButtonElement,
 } from "@stripe/react-stripe-js";
 import axios from "axios";
 import cardsIcons from "../../assets/cards.svg";
 import { CardIcon, LockOpenIcon, EnvelopeIcon } from "../../components/icons";
+import { elementStyle } from "../../constants";
+import PaymentButton from "./PaymentButton";
 
 const CheckoutForm = () => {
   const stripe = useStripe();
   const elements = useElements();
-  const [email, setEmail] = useState("test@test.com");
+  const [email, setEmail] = useState("");
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
-  const [paymentRequest, setPaymentRequest] = useState(null);
-  const [canMakePayment, setCanMakePayment] = useState(false);
 
   const [focusStatus, setFocusStatus] = useState({
     cardNumber: false,
@@ -39,60 +38,6 @@ const CheckoutForm = () => {
       [e.elementType]: false,
     }));
   };
-
-  useEffect(() => {
-    if (stripe) {
-      const pr = stripe.paymentRequest({
-        country: "US",
-        currency: "usd",
-        total: {
-          label: "Total",
-          amount: 1,
-        },
-        requestPayerName: true,
-        requestPayerEmail: true,
-      });
-
-      pr.canMakePayment().then((result) => {
-        if (result) {
-          setPaymentRequest(pr);
-          setCanMakePayment(true);
-        }
-      });
-
-      pr.on("paymentmethod", async (ev) => {
-        try {
-          const { clientSecret } = await axios
-            .post(
-              `${import.meta.env.VITE_API_URL}/payment/create-payment-intent`,
-              {
-                email: ev.payerEmail,
-              }
-            )
-            .then((res) => res.data);
-
-          const { error: confirmError } = await stripe.confirmCardPayment(
-            clientSecret,
-            {
-              payment_method: ev.paymentMethod.id,
-            }
-          );
-
-          if (confirmError) {
-            ev.complete("fail");
-            setError(confirmError.message);
-          } else {
-            ev.complete("success");
-            setSuccess(true);
-          }
-        } catch (error) {
-          ev.complete("fail");
-          console.error("Error occurred during payment method:", error);
-          setError(error.message);
-        }
-      });
-    }
-  }, [stripe]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -147,43 +92,12 @@ const CheckoutForm = () => {
     }
   };
 
-  const elementStyle = {
-    base: {
-      color: "#ffffff",
-      fontFamily: "Arial, sans-serif",
-      fontSmoothing: "antialiased",
-      fontSize: "18px",
-      backgroundColor: "#322f3b",
-      "::placeholder": {
-        color: "#98979e",
-      },
-    },
-    invalid: {
-      color: "#fa755a",
-      iconColor: "#fa755a",
-    },
-  };
-
   return (
     <div className="flex items-center justify-center">
       <div className="w-full p-4">
-        <p className="text-center text-white text-lg mb-4">Total $666.00</p>
+        <p className="text-center text-white text-lg mb-4">Total $1.00</p>
 
-        {canMakePayment && paymentRequest && (
-          <>
-            <PaymentRequestButtonElement
-              options={{ paymentRequest }}
-              className="w-full py-2 mb-4"
-            />
-            <div className="relative flex items-center mb-2">
-              <div className="flex-grow border-t border-input-placeholder"></div>
-              <span className="flex-shrink text-sm mx-2 text-input-placeholder">
-                Or pay by card
-              </span>
-              <div className="flex-grow border-t border-input-placeholder"></div>
-            </div>
-          </>
-        )}
+        <PaymentButton setError={setError} setSuccess={setSuccess} />
 
         <div className="flex justify-between space-x-2 mb-4">
           <img src={cardsIcons} alt="Cards" />
