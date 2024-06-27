@@ -5,7 +5,12 @@ import {
   CardCvcElement,
 } from "@stripe/react-stripe-js";
 import cardsIcons from "../../assets/cards.svg";
-import { CardIcon, LockOpenIcon, EnvelopeIcon } from "../../components/icons";
+import {
+  CardIcon,
+  LockOpenIcon,
+  EnvelopeIcon,
+  LockClosedIcon,
+} from "../../components/icons";
 import { elementStyle } from "../../constants";
 import PaymentButton from "./PaymentButton";
 import Spinner from "../../components/Spinner";
@@ -135,7 +140,13 @@ const CheckoutForm = () => {
             {isSubmitting ? (
               <Spinner />
             ) : (
-              <LockOpenIcon className="w-3 h-3 mr-1" />
+              <>
+                {isFormValid() ? (
+                  <LockOpenIcon className="w-3 h-3 mr-1" />
+                ) : (
+                  <LockClosedIcon className="w-3 h-3 mr-1" />
+                )}
+              </>
             )}
             Confirm Purchase
           </button>

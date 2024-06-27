@@ -71,7 +71,14 @@ const PaymentButton = ({ setError, setSuccess }) => {
   return (
     <>
       <PaymentRequestButtonElement
-        options={{ paymentRequest }}
+        options={{
+          paymentRequest,
+          style: {
+            paymentRequestButton: {
+              height: "57px",
+            },
+          },
+        }}
         className="w-full py-2 mb-4"
       />
       <div className="relative flex items-center mb-2">

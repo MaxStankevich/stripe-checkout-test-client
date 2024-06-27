@@ -1,6 +1,7 @@
-const LockOpen = ({ className }) => {
+const LockClosed = ({ className }) => {
   return (
     <svg
+      className={className}
       width="11"
       height="15"
       viewBox="0 0 11 15"
@@ -16,4 +17,4 @@ const LockOpen = ({ className }) => {
   );
 };
 
-export default LockOpen;
+export default LockClosed;
